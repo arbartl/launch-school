@@ -130,9 +130,9 @@ loop do
 
   prompt("The result is: #{result}")
 
-  prompt("Would you like to perform another calculation? (Y / N)")
+  prompt(MESSAGES['again?'])
   answer = gets.chomp
   break unless answer.downcase.start_with?('y')
 end
 
-prompt("Thank you for using calculator. Good bye!")
+prompt(MESSAGES['goodbye'])
