@@ -1,0 +1,10 @@
+welcome: "Welcome to Calculator!"
+name_request: "Please enter your name: "
+invalid_name: "Make sure to use your name!"
+first_number: "Please enter the first number: "
+second_number: "Please enter the second number: "
+invalid_number: "Invalid number!"
+invalid_operation: "Invalid choice. Please enter 1, 2, 3, or 4"
+
+again?: "Would you like to perform another calculation? (Y / N)"
+goodbye: "Thank you for using calculator. Good bye!"
