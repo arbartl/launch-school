@@ -44,7 +44,7 @@ def get_principal
   principal = 0
   loop do
     prompt(MESSAGES['get_principal'])
-    principal = gets.chomp
+    principal = gets.chomp.strip
     break if number?(principal) && positive?(principal)
     prompt(MESSAGES['invalid_principal'])
   end
@@ -55,7 +55,7 @@ def get_downpayment(loan)
   downpayment = 0
   loop do
     prompt(MESSAGES['get_downpayment'])
-    downpayment = gets.chomp
+    downpayment = gets.chomp.strip
     break if number?(downpayment) &&
              downpayment.to_f >= 0 &&
              downpayment.to_f < loan[:principal].to_f
@@ -68,7 +68,7 @@ def get_apr
   apr = 0
   loop do
     prompt(MESSAGES['get_apr'])
-    apr = gets.chomp
+    apr = gets.chomp.strip
     break if number?(apr) && apr.to_f >= 0
     prompt(MESSAGES['invalid_apr'])
   end
@@ -79,7 +79,7 @@ def get_duration
   duration = 0
   loop do
     prompt(MESSAGES['get_duration'])
-    duration = gets.chomp
+    duration = gets.chomp.strip
     break if number?(duration) && positive?(duration)
     prompt(MESSAGES['invalid_duration'])
   end
@@ -114,14 +114,13 @@ def display_summary(loan)
   prompt('')
 end
 
-def calculate_another?
+def calculate_another
   answer = nil
   loop do
     prompt(MESSAGES['calculate_another?'])
-    answer = gets.chomp.downcase
+    answer = gets.chomp.downcase.strip
     break if VALID_RESPONSE[:positive].include?(answer) ||
              VALID_RESPONSE[:negative].include?(answer)
-
     prompt(MESSAGES['invalid_exit_response'])
   end
   answer
@@ -140,8 +139,9 @@ loop do # main loop
 
   display_summary(loan_details)
 
-  go_again = calculate_another?
-  clear_screen unless VALID_RESPONSE[:negative].include?(go_again)
+  go_again = calculate_another
+
   break if VALID_RESPONSE[:negative].include?(go_again)
+  clear_screen
 end
 prompt(MESSAGES['goodbye'])
