@@ -74,20 +74,21 @@ def win?(first, second)
   WINNING_OPTIONS[first.to_sym].include?(second.to_sym)
 end
 
-def decide_result_and_log_score(player, computer, score)
+def decide_result(player, computer)
   if win?(player, computer)
     display_win(player, computer)
-    add_point(score, :player)
+    :player
   elsif win?(computer, player)
     display_lose(computer, player)
-    add_point(score, :computer)
+    :computer
   else
     prompt(MESSAGES['tie'])
+    nil
   end
 end
 
 def add_point(score, winner)
-  score[winner] += 1
+  score[winner] += 1 if winner
 end
 
 def display_win(player, computer)
@@ -162,7 +163,8 @@ loop do # main loop
     prompt(MESSAGES['line'])
     display_choices(player_choice, computer_choice)
     prompt('')
-    decide_result_and_log_score(player_choice, computer_choice, score)
+    round_winner = decide_result(player_choice, computer_choice)
+    add_point(score, round_winner)
     prompt('')
     display_score(score, name)
     prompt(MESSAGES['line'])
