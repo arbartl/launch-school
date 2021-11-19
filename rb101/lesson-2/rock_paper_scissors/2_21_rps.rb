@@ -23,12 +23,25 @@ VALID_EXIT_ANSWER = {
   negative: ['n', 'no']
 }
 
+POINTS_TO_WIN = 3
+
 def prompt(message)
   puts("=> #{message}")
 end
 
 def clear_screen
   system('clear')
+end
+
+def get_name
+  name = nil
+  loop do
+    prompt(MESSAGES['ask_name'])
+    name = gets.chomp.strip
+    break unless name.empty?
+    prompt(MESSAGES['invalid_name'])
+  end
+  name
 end
 
 def get_player_choice
@@ -61,7 +74,7 @@ def win?(first, second)
   WINNING_OPTIONS[first.to_sym].include?(second.to_sym)
 end
 
-def decide_result(player, computer, score)
+def decide_result_and_log_score(player, computer, score)
   if win?(player, computer)
     display_win(player, computer)
     add_point(score, :player)
@@ -96,7 +109,7 @@ def display_score(score, name)
 end
 
 def display_winner(score, name)
-  if score[:player] == 3
+  if score[:player] == POINTS_TO_WIN
     prompt("#{name} won!!")
   else
     prompt(MESSAGES['computer_win_game'])
@@ -119,8 +132,7 @@ clear_screen
 
 prompt(MESSAGES['welcome'])
 prompt(MESSAGES['line'])
-prompt(MESSAGES['ask_name'])
-name = gets.chomp
+name = get_name
 rules_display = <<-MSG
 Here are the rules:
 
@@ -146,16 +158,17 @@ loop do # main loop
   loop do
     player_choice = get_player_choice
     computer_choice = get_computer_choice
-
+    clear_screen
     prompt(MESSAGES['line'])
     display_choices(player_choice, computer_choice)
     prompt('')
-    decide_result(player_choice, computer_choice, score)
+    decide_result_and_log_score(player_choice, computer_choice, score)
     prompt('')
     display_score(score, name)
     prompt(MESSAGES['line'])
 
-    break if score[:player] == 3 || score[:computer] == 3
+    break if score[:player] == POINTS_TO_WIN ||
+             score[:computer] == POINTS_TO_WIN
   end
 
   display_winner(score, name)
