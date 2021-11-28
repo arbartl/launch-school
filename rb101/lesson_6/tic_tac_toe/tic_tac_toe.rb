@@ -25,18 +25,18 @@ def joinor(arr, separator=', ', last_separator='or')
   arr.join(separator) + " #{last_separator} " + last_element.to_s
 end
 
-def get_points_to_win
+def choose_points_to_win
   points_to_win = nil
   loop do
-    prompt("How many points do you want to play to? (1 - 10)")
+    prompt("How many points do you want to play to? (1 - 5)")
     points_to_win = gets.chomp.strip.to_i
-    break if (1..10).include?(points_to_win)
+    break if (1..5).include?(points_to_win)
     prompt("That's not a valid point goal...")
   end
   points_to_win
 end
 
-def get_computer_difficulty
+def choose_computer_difficulty
   difficulty = nil
   loop do
     prompt("What difficulty do you want to face?")
@@ -50,21 +50,50 @@ def get_computer_difficulty
   difficulty
 end
 
+def choose_first_player
+  player = nil
+  loop do
+    prompt("Who should go first?")
+    prompt("1. Player")
+    prompt("2. Computer")
+    prompt("3. Decide for me!")
+    player = gets.chomp.strip.to_i
+    break if (1..3).include?(player)
+    prompt("That's not a valid choice...")
+  end
+  player
+end
+
+def assign_first_player
+  first_player = choose_first_player
+  if first_player == 1
+    "Player"
+  elsif first_player == 2
+    "Computer"
+  else
+    ["Player", "Computer"].sample
+  end
+end
+
+def display_first_player(player)
+  prompt("#{player} goes first!")
+  sleep(1.5)
+end
+
 # rubocop:disable Metrics/AbcSize
 def display_board(board)
-  clear_screen
   puts ""
-  puts "     |     |"
-  puts "  #{board[1]}  |  #{board[2]}  |  #{board[3]}  "
-  puts "     |     |"
-  puts "-----+-----+-----"
-  puts "     |     |"
-  puts "  #{board[4]}  |  #{board[5]}  |  #{board[6]}  "
-  puts "     |     |"
-  puts "-----+-----+-----"
-  puts "     |     |"
-  puts "  #{board[7]}  |  #{board[8]}  |  #{board[9]}  "
-  puts "     |     |"
+  puts "        |     |"
+  puts "     #{board[1]}  |  #{board[2]}  |  #{board[3]}  "
+  puts "        |     |"
+  puts "   -----+-----+-----"
+  puts "        |     |"
+  puts "     #{board[4]}  |  #{board[5]}  |  #{board[6]}  "
+  puts "        |     |"
+  puts "   -----+-----+-----"
+  puts "        |     |"
+  puts "     #{board[7]}  |  #{board[8]}  |  #{board[9]}  "
+  puts "        |     |"
   puts ""
 end
 # rubocop:enable Metrics/AbcSize
@@ -85,6 +114,7 @@ end
 
 def player_places_piece!(board)
   player_choice = nil
+  prompt("Your turn!")
   loop do
     prompt("Choose an empty square (#{joinor(empty_squares(board))})")
     player_choice = gets.chomp.strip.to_i
@@ -104,32 +134,51 @@ def find_at_risk_square(marker, board)
       end
     end
   end
-  return nil
+  nil
 end
 
 def computer_places_piece!(board, difficulty)
+  prompt("Computer turn...")
+  sleep(1)
   case difficulty
   when 1
     board[empty_squares(board).sample] = COMPUTER_MARKER
   when 2
-    if find_at_risk_square(PLAYER_MARKER, board)
-      board[find_at_risk_square(PLAYER_MARKER, board)] = COMPUTER_MARKER
-    elsif find_at_risk_square(COMPUTER_MARKER, board)
-      board[find_at_risk_square(COMPUTER_MARKER, board)] = COMPUTER_MARKER
-    else
-      board[empty_squares(board).sample] = COMPUTER_MARKER
-    end
+    computer_logic_medium(board)
   when 3
-    if find_at_risk_square(COMPUTER_MARKER, board)
-      board[find_at_risk_square(COMPUTER_MARKER, board)] = COMPUTER_MARKER
-    elsif find_at_risk_square(PLAYER_MARKER, board)
-      board[find_at_risk_square(PLAYER_MARKER, board)] = COMPUTER_MARKER
-    elsif board[5] == " "
-      board[5] = COMPUTER_MARKER
-    else
-      board[empty_squares(board).sample] = COMPUTER_MARKER
-    end
+    computer_logic_hard(board)
   end
+end
+
+def computer_logic_medium(board)
+  if find_at_risk_square(PLAYER_MARKER, board)
+    board[find_at_risk_square(PLAYER_MARKER, board)] = COMPUTER_MARKER
+  elsif find_at_risk_square(COMPUTER_MARKER, board)
+    board[find_at_risk_square(COMPUTER_MARKER, board)] = COMPUTER_MARKER
+  else
+    board[empty_squares(board).sample] = COMPUTER_MARKER
+  end
+end
+
+def computer_logic_hard(board)
+  if find_at_risk_square(COMPUTER_MARKER, board)
+    board[find_at_risk_square(COMPUTER_MARKER, board)] = COMPUTER_MARKER
+  elsif find_at_risk_square(PLAYER_MARKER, board)
+    board[find_at_risk_square(PLAYER_MARKER, board)] = COMPUTER_MARKER
+  elsif board[5] == " "
+    board[5] = COMPUTER_MARKER
+  else
+    board[empty_squares(board).sample] = COMPUTER_MARKER
+  end
+end
+
+def place_piece!(current_player, board, difficulty)
+  player_places_piece!(board) if current_player == "Player"
+  computer_places_piece!(board, difficulty) if current_player == "Computer"
+end
+
+def alternate_player(current_player)
+  current_player == "Player" ? "Computer" : "Player"
 end
 
 def someone_won?(board)
@@ -143,16 +192,15 @@ end
 def detect_winner(board)
   WINNING_LINES.each do |line|
     if board.values_at(*line).count(PLAYER_MARKER) == 3
-      return 'Player'
+      return "Player"
     elsif board.values_at(*line).count(COMPUTER_MARKER) == 3
-      return 'Computer'
+      return "Computer"
     end
   end
   nil
 end
 
 def display_round_winner(board)
-  display_board(board)
   if someone_won?(board)
     prompt("#{detect_winner(board)} won a point!")
   else
@@ -165,6 +213,7 @@ def update_scores(winner, scores)
 end
 
 def display_score(scores, points_to_win, board)
+  clear_screen
   prompt("Player: #{scores[:Player]} -- Computer: #{scores[:Computer]}")
   prompt("First to #{points_to_win} wins!") if !detect_winner(board)
 end
@@ -191,24 +240,25 @@ loop do # main loop
     Player: 0,
     Computer: 0
   }
-  points_to_win = get_points_to_win
-  difficulty = get_computer_difficulty
   board = nil
+  points_to_win = choose_points_to_win
+  difficulty = choose_computer_difficulty
+  current_player = assign_first_player
+  display_first_player(current_player)
 
   loop do
     board = initialize_board
 
     loop do
-      display_board(board)
       display_score(scores, points_to_win, board)
-
-      player_places_piece!(board)
-      break if someone_won?(board)
-
-      computer_places_piece!(board, difficulty)
+      display_board(board)
+      place_piece!(current_player, board, difficulty)
+      current_player = alternate_player(current_player)
       break if someone_won?(board) || board_full?(board)
     end
 
+    display_score(scores, points_to_win, board)
+    display_board(board)
     winner = detect_winner(board)
     display_round_winner(board)
     sleep(1.25)
