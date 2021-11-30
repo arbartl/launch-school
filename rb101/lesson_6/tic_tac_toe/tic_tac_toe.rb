@@ -11,6 +11,9 @@ VALID_EXIT_ANSWER = {
   negative: ['n', 'no']
 }
 
+CENTER_SQUARE = 5
+BOARD_SIZE = 3
+
 def prompt(message)
   puts "=> #{message}"
 end
@@ -109,7 +112,7 @@ def empty_squares(board)
 end
 
 def valid_choice?(square, board)
-  empty_squares(board).include?(square)
+  empty_squares(board).include?(square.to_i) && square == square.to_i.to_s
 end
 
 def player_places_piece!(board)
@@ -117,11 +120,11 @@ def player_places_piece!(board)
   prompt("Your turn!")
   loop do
     prompt("Choose an empty square (#{joinor(empty_squares(board))})")
-    player_choice = gets.chomp.strip.to_i
+    player_choice = gets.chomp.strip
     break if valid_choice?(player_choice, board)
     prompt("That's not a valid choice...")
   end
-  board[player_choice] = PLAYER_MARKER
+  board[player_choice.to_i] = PLAYER_MARKER
 end
 
 def find_at_risk_square(marker, board)
@@ -165,8 +168,8 @@ def computer_logic_hard(board)
     board[find_at_risk_square(COMPUTER_MARKER, board)] = COMPUTER_MARKER
   elsif find_at_risk_square(PLAYER_MARKER, board)
     board[find_at_risk_square(PLAYER_MARKER, board)] = COMPUTER_MARKER
-  elsif board[5] == " "
-    board[5] = COMPUTER_MARKER
+  elsif board[CENTER_SQUARE] == " "
+    board[CENTER_SQUARE] = COMPUTER_MARKER
   else
     board[empty_squares(board).sample] = COMPUTER_MARKER
   end
@@ -191,9 +194,9 @@ end
 
 def detect_winner(board)
   WINNING_LINES.each do |line|
-    if board.values_at(*line).count(PLAYER_MARKER) == 3
+    if board.values_at(*line).count(PLAYER_MARKER) == BOARD_SIZE
       return "Player"
-    elsif board.values_at(*line).count(COMPUTER_MARKER) == 3
+    elsif board.values_at(*line).count(COMPUTER_MARKER) == BOARD_SIZE
       return "Computer"
     end
   end
