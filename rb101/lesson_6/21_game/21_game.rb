@@ -1,5 +1,3 @@
-require 'pry'
-
 DECK = [["A", "D"], ["A", "C"], ["A", "H"], ["A", "S"],
         ["K", "D"], ["K", "C"], ["K", "H"], ["K", "S"],
         ["Q", "D"], ["Q", "C"], ["Q", "H"], ["Q", "S"],
@@ -22,6 +20,7 @@ CARD_SUITS = {
 }
 
 DEALER_STAY = 17
+TARGET_VALUE = 21
 
 VALID_TURN_CHOICE = {
   stand: ['s', 'st', 'stand'],
@@ -33,10 +32,28 @@ VALID_ROUND_OVER_CHOICE = {
   walk: ['w', 'walk', 'walk away', 'walkaway', 'q', 'quit']
 }
 
-VALID_PLAY_AGAIN_CHOICE = {
+VALID_YES_NO = {
   positive: ['y', 'yes'],
   negative: ['n', 'no']
 }
+
+EXPLANATION = <<-MSG
+   You and the dealer will each be dealt 2 cards. You will only see one 
+   of the dealer's cards. The goal is to reach 21 points without going
+   over (busting). After you decide to keep your hand (stay), the dealer
+   will go.
+ 
+   The dealer will reveal their other card, and decide to stay or hit.
+   The dealer MUST hit if they have less than 17 points. After the dealer
+   stays, your scores will be compared.
+   
+   Aces are worth 1 or 11 points, Face Cards are worth 10 points, and all
+   other cards are worth their face value.
+   
+   If you have an Ace and a Face Card as your dealt hand, you have a
+   Blackjack and automatically win, unless the dealer also does. If you
+   get Blackjack, you get one and a half times your bet back!  
+MSG
 
 def clear_screen
   system("clear")
@@ -57,6 +74,32 @@ def prompt(message)
   puts("=> #{message}")
 end
 
+def welcome
+  prompt("Welcome to Ruby Blackjack!")
+  prompt("")
+  prompt("You'll start with 500 chips.")
+  prompt("")
+end
+
+def ask_for_explanation
+  choice = nil
+  loop do
+    prompt("Would you like an explanation? (Y / N)")
+    choice = gets.chomp.strip.downcase
+    break if VALID_YES_NO.values.flatten.include?(choice)
+    prompt("Sorry, I didnt catch that...")
+  end
+  choice
+end
+
+def display_explanation
+  clear_screen
+  puts(EXPLANATION)
+  puts("")
+  prompt("Ready to start? Press Enter to play!")
+  gets
+end
+
 def reset_hands_and_scores(game_info)
   game_info[:dealer_hand] = []
   game_info[:player_hand] = []
@@ -71,11 +114,17 @@ def player_bet(game_info)
   loop do
     prompt("You have #{chips} chips")
     prompt("How much would you like to bet? (1 - #{chips})")
-    bet = gets.chomp.strip.to_i
-    break if bet > 0 && bet <= chips
+    bet = gets.chomp.strip
+    break if valid_bet?(bet, chips)
     prompt("That's not a valid bet...")
   end
-  bet
+  bet.to_i
+end
+
+def valid_bet?(bet, chips)
+  bet.to_i > 0 &&
+    bet.to_i <= chips &&
+    bet == bet.to_i.to_s
 end
 
 def deal_starting_hands(game_info)
@@ -155,43 +204,38 @@ def player_turn_choice(game_info)
   game_info[:player_choice] = choice
 end
 
-def end_round_choice
-  choice = nil
-  loop do
-    prompt("")
-    prompt("Would you like to (C)ontinue or (W)alk away?")
-    choice = gets.chomp.strip.downcase
-    break if VALID_ROUND_OVER_CHOICE.values.flatten.include?(choice)
-    prompt("That's not a valid choice...")
-  end
-  choice
+def player_turn_over?(game_info)
+  VALID_TURN_CHOICE[:stand].include?(game_info[:player_choice]) ||
+    game_info[:player_hand_score] == TARGET_VALUE ||
+    bust?(game_info[:player_hand])
 end
 
 def score_hand(hand)
   total = 0
   hand.each do |card|
-    total += if card[0] == "A"
+    card_value = card[0]
+    total += if card_value == "A"
                11
-             elsif card[0].to_i == 0 # Face Cards
+             elsif card_value.to_i == 0 # Face Cards
                10
              else
-               card[0].to_i
+               card_value.to_i
              end
   end
 
   hand.select { |card| card[0] == "A" }.count.times do
-    total -= 10 if total > 21
+    total -= 10 if total > TARGET_VALUE
   end
 
   total
 end
 
 def blackjack?(hand)
-  score_hand(hand) == 21 && hand.size == 2
+  score_hand(hand) == TARGET_VALUE && hand.size == 2
 end
 
 def bust?(hand)
-  score_hand(hand) > 21
+  score_hand(hand) > TARGET_VALUE
 end
 
 def update_hand_scores(game_info)
@@ -202,10 +246,10 @@ end
 def determine_winner(game_info)
   if winning_hand?(game_info[:player_hand]) &&
      beats_opponent?(game_info[:player_hand], game_info[:dealer_hand])
-    "Player"
+    return "Player"
   elsif winning_hand?(game_info[:dealer_hand]) &&
         beats_opponent?(game_info[:dealer_hand], game_info[:player_hand])
-    "Dealer"
+    return "Dealer"
   end
   nil
 end
@@ -231,26 +275,50 @@ def update_chip_count(game_info, winner)
 end
 
 def display_chip_count(game_info)
+  prompt("")
   prompt("You have #{game_info[:player_chip_count]} chips left.")
 end
 
 def display_winner(game_info, winner)
-  if winner == "Player" && blackjack?(game_info[:player_hand])
-    if !blackjack?(game_info[:dealer_hand])
-      prompt("Blackjack!!")
-      prompt("#{winner} wins!")
-    elsif winner == "Player" && bust?(game_info[:dealer_hand])
-      prompt("Dealer busted!")
-      prompt("#{winner} wins!")
-    end
-  elsif winner == "Dealer" && bust?(game_info[:player_hand])
+  if blackjack?(game_info[:player_hand])
+    prompt("Blackjack!!")
+  elsif bust?(game_info[:player_hand])
     prompt("You busted!")
-    prompt("#{winner} wins!")
-  elsif winner
+  elsif bust?(game_info[:dealer_hand])
+    prompt("Dealer busted!")
+  end
+
+  if winner
     prompt("#{winner} wins!")
   else
     prompt("It's a tie!")
   end
+end
+
+def end_round(game_info)
+  winner = determine_winner(game_info)
+  display_winner(game_info, winner)
+  update_chip_count(game_info, winner)
+  sleep(1)
+  display_chip_count(game_info)
+end
+
+def end_round_choice
+  choice = nil
+  loop do
+    prompt("")
+    prompt("Would you like to (C)ontinue or (W)alk away?")
+    choice = gets.chomp.strip.downcase
+    break if VALID_ROUND_OVER_CHOICE.values.flatten.include?(choice)
+    prompt("That's not a valid choice...")
+  end
+  choice
+end
+
+def display_game_results(game_info)
+  prompt("You walked away with #{game_info[:player_chip_count]} chips!") if
+    game_info[:player_chip_count] > 0
+  prompt("You ran out of chips!") if game_info[:player_chip_count] <= 0
 end
 
 def play_again_choice
@@ -258,11 +326,21 @@ def play_again_choice
   loop do
     prompt("Would you like to play again? (Y / N)")
     choice = gets.chomp.strip.downcase
-    break if VALID_PLAY_AGAIN_CHOICE.values.flatten.include?(choice)
+    break if VALID_YES_NO.values.flatten.include?(choice)
     prompt("That's not a valid choice...")
   end
   choice
 end
+
+def game_over?(game_info)
+  VALID_ROUND_OVER_CHOICE[:walk].include?(game_info[:player_choice]) ||
+    game_info[:player_chip_count] <= 0
+end
+
+welcome
+explanation_choice = ask_for_explanation
+display_explanation if
+  VALID_YES_NO[:positive].include?(explanation_choice)
 
 loop do # main loop
   game_info = {
@@ -289,9 +367,7 @@ loop do # main loop
       display_game_info(game_info)
       break if blackjack?(game_info[:player_hand])
       player_turn(game_info)
-      break if VALID_TURN_CHOICE[:stand].include?(game_info[:player_choice]) ||
-               game_info[:player_hand_score] == 21 ||
-               bust?(game_info[:player_hand])
+      break if player_turn_over?(game_info)
     end
 
     unless bust?(game_info[:player_hand])
@@ -302,24 +378,17 @@ loop do # main loop
     end
 
     reveal_dealer_hand(game_info)
-
-    winner = determine_winner(game_info)
-    display_winner(game_info, winner)
-    update_chip_count(game_info, winner)
-    sleep(1)
-    display_chip_count(game_info)
-    player_choice = end_round_choice if game_info[:player_chip_count] > 0
-    break if VALID_ROUND_OVER_CHOICE[:walk].include?(player_choice) ||
-             game_info[:player_chip_count] <= 0
+    end_round(game_info)
+    game_info[:player_choice] = end_round_choice if
+      game_info[:player_chip_count] > 0
+    break if game_over?(game_info)
   end
 
   clear_screen
-  prompt("You walked away with #{game_info[:player_chip_count]} chips!") if
-    game_info[:player_chip_count] > 0
-  prompt("You ran out of chips!") if game_info[:player_chip_count] <= 0
+  display_game_results(game_info)
 
   player_choice = play_again_choice
-  break if VALID_PLAY_AGAIN_CHOICE[:negative].include?(player_choice)
+  break if VALID_YES_NO[:negative].include?(player_choice)
 end
 
 prompt("Thanks for playing!")
