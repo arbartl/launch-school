@@ -1,7 +1,3 @@
-CARD_SUITS = ["Spades", "Diamonds", "Clubs", "Hearts"]
-
-CARD_VALUES = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']
-
 CARD_SYMBOLS = {
   "Spades" => "♠",
   "Diamonds" => "♦",
@@ -99,8 +95,8 @@ end
 def initialize_deck
   deck = []
   card = {}
-  CARD_VALUES.each do |value|
-    CARD_SUITS.each do |suit|
+  CARD_POINTS.keys.each do |value|
+    CARD_SYMBOLS.keys.each do |suit|
       card[:value] = value
       card[:suit] = suit
       card[:symbol] = CARD_SYMBOLS[suit]
