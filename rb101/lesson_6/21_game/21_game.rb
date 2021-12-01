@@ -1,22 +1,17 @@
-DECK = [["A", "D"], ["A", "C"], ["A", "H"], ["A", "S"],
-        ["K", "D"], ["K", "C"], ["K", "H"], ["K", "S"],
-        ["Q", "D"], ["Q", "C"], ["Q", "H"], ["Q", "S"],
-        ["J", "D"], ["J", "C"], ["J", "H"], ["J", "S"],
-        ["10", "D"], ["10", "C"], ["10", "H"], ["10", "S"],
-        ["9", "D"], ["9", "C"], ["9", "H"], ["9", "S"],
-        ["8", "D"], ["8", "C"], ["8", "H"], ["8", "S"],
-        ["7", "D"], ["7", "C"], ["7", "H"], ["7", "S"],
-        ["6", "D"], ["6", "C"], ["6", "H"], ["6", "S"],
-        ["5", "D"], ["5", "C"], ["5", "H"], ["5", "S"],
-        ["4", "D"], ["4", "C"], ["4", "H"], ["4", "S"],
-        ["3", "D"], ["3", "C"], ["3", "H"], ["3", "S"],
-        ["2", "D"], ["2", "C"], ["2", "H"], ["2", "S"]]
+CARD_SUITS = ["Spades", "Diamonds", "Clubs", "Hearts"]
 
-CARD_SUITS = {
-  "S" => "♠",
-  "D" => "♦",
-  "C" => "♣",
-  "H" => "♥"
+CARD_VALUES = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']
+
+CARD_SYMBOLS = {
+  "Spades" => "♠",
+  "Diamonds" => "♦",
+  "Clubs" => "♣",
+  "Hearts" => "♥"
+}
+
+CARD_POINTS = {
+  'A' => 11, 'K' => 10, 'Q' => 10, 'J' => 10, '10' => 10, '9' => 9, '8' => 8,
+  '7' => 7, '6' => 6, '5' => 5, '4' => 4, '3' => 3, '2' => 2
 }
 
 DEALER_STAY = 17
@@ -61,8 +56,8 @@ end
 
 def joinand(arr, separator=', ', last_separator=' & ')
   joined_arr = []
-  arr.each do |sub_arr|
-    str = sub_arr[0] + CARD_SUITS[sub_arr[1]]
+  arr.each do |card|
+    str = card[:value] + card[:symbol]
     joined_arr << str
   end
   last_element = joined_arr.pop
@@ -75,6 +70,7 @@ def prompt(message)
 end
 
 def welcome
+  clear_screen
   prompt("Welcome to Ruby Blackjack!")
   prompt("")
   prompt("You'll start with 500 chips.")
@@ -100,12 +96,28 @@ def display_explanation
   gets
 end
 
+def initialize_deck
+  deck = []
+  card = {}
+  CARD_VALUES.each do |value|
+    CARD_SUITS.each do |suit|
+      card[:value] = value
+      card[:suit] = suit
+      card[:symbol] = CARD_SYMBOLS[suit]
+      card[:points] = CARD_POINTS[value]
+      deck << card
+      card = {}
+    end
+  end
+  deck
+end
+
 def reset_hands_and_scores(game_info)
   game_info[:dealer_hand] = []
   game_info[:player_hand] = []
   game_info[:player_hand_score] = 0
   game_info[:dealer_hand_score] = 0
-  game_info[:current_deck] = DECK.shuffle
+  game_info[:current_deck] = initialize_deck.shuffle
 end
 
 def player_bet(game_info)
@@ -136,7 +148,7 @@ def display_game_info(game_info)
   clear_screen
   dealer_hand = game_info[:dealer_hand][0]
   prompt("----------------------")
-  prompt("Dealer's Hand: #{dealer_hand[0]}#{CARD_SUITS[dealer_hand[1]]}" \
+  prompt("Dealer's Hand: #{dealer_hand[:value]}#{dealer_hand[:symbol]}" \
           " & ??")
   prompt("Dealer's Total: ??")
   prompt("----------------------")
@@ -212,18 +224,9 @@ end
 
 def score_hand(hand)
   total = 0
-  hand.each do |card|
-    card_value = card[0]
-    total += if card_value == "A"
-               11
-             elsif card_value.to_i == 0 # Face Cards
-               10
-             else
-               card_value.to_i
-             end
-  end
+  hand.each { |card| total += card[:points] }
 
-  hand.select { |card| card[0] == "A" }.count.times do
+  hand.select { |card| card[:value] == "A" }.count.times do
     total -= 10 if total > TARGET_VALUE
   end
 
@@ -351,7 +354,7 @@ loop do # main loop
     player_chip_count: 500,
     player_bet: 0,
     player_choice: '',
-    current_deck: DECK.shuffle
+    current_deck: initialize_deck.shuffle
   }
 
   loop do
