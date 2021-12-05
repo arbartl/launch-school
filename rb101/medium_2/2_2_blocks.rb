@@ -6,7 +6,12 @@ BLOCKS = {
 
 def block_word?(str)
   str.downcase.chars do |letter|
-    return false if str.downcase.chars.include?(BLOCKS[letter])
+    return false if str.downcase.chars.include?(BLOCKS[letter]) ||
+                    str.downcase.chars.count(letter) > 1
   end
   true
 end
+
+p block_word?('BATCHB')
+p block_word?('BATCHA')
+p block_word?('BATCH')
