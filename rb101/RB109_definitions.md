@@ -9,13 +9,15 @@
 - how the Array#sort method works
 
 
-### Examples
+## Examples
+
+### Variable Assignment
 
 `a = 5`
 
 Local variable `a` is initialized and assigned to the Integer object `5`
 
-
+### Variable Reassignment
 
 ```ruby
 a = 'string'
@@ -31,7 +33,7 @@ On line 3, local variable `a` is reassigned to the Integer object `5`.
 
 Local variable `b` references the String object with a value of 'string' and local variable `a` references the Integer object `5`.
 
-
+### Method Definition
 
 ```ruby
 def my_method(int)
@@ -41,13 +43,13 @@ end
 
 We are defining the method `my_method` which takes 1 non-optional parameter.
 
-
+### Method Invocation
 
 `my_method(5)`
 
 We are invoking the `my_method` method and passing in the Integer object `5` as an argument to it.
 
-
+### Loop Method and Passing Block as Argument
 
 ```ruby
 loop do
@@ -62,7 +64,7 @@ On line 2 we are invoking the `puts` method and passing in the String object 'He
 
 On line 3 we use the keyword `break` to break out of the `loop` method.
 
-
+### Reassignment with Method Call
 
 ```ruby
 i = 0
@@ -71,7 +73,7 @@ i += 5
 
 On line 1 we are initializing the local variable `i` and assigning it to the Integer object `0`. On line 2, we are reassigning tje local variable `i` to the return value of value of a method invocation of `Integer#+` on the local variable `i` with the Integer object `5` passed to it as an argument.
 
-
+### `Array#each` Method
 
 ```ruby
 [1, 2, 3, 4].each { |num| puts num }
@@ -85,7 +87,7 @@ We are invoking the `Array#each` method on the Array object `[1, 2, 3, 4]` and p
 ```
 and the return value would be `[1, 2, 3, 4]`.
 
-
+### `Array#map` Method
 
 ```ruby
 [1, 2, 3, 4].map { |num| puts num }
@@ -98,6 +100,8 @@ We are invoking the `Array#map` method on the Array object `[1, 2, 3, 4]` and pa
 4
 ```
 and the return value would be `[nil, nil, nil, nil]`.
+
+### `Array#select` Method
 
 ```ruby
 [1, 2, 3, 4].select { |num| puts num }
