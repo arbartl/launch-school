@@ -9,7 +9,9 @@
 - how the Array#sort method works
 
 
-## Examples
+# Examples
+
+## Variable Scope & Assignment
 
 ### Variable Assignment
 
@@ -32,6 +34,62 @@ On line 2, a local variable `b` is initialized and assigned to the String object
 On line 3, local variable `a` is reassigned to the Integer object `5`.
 
 Local variable `b` references the String object with a value of 'string' and local variable `a` references the Integer object `5`.
+
+### Local Scope with Blocks
+
+```ruby
+a = 1
+
+loop do
+  a = 2
+  b = 3
+  break
+end
+
+puts a
+puts b
+```
+
+On line 1, a local variable `a` is initialized and assigned to the Integer object `1`.
+
+On line 3, we invoke the `loop` method, passing in the `do...end` block on lines 3-7.
+
+On line 4, we reassign the local variable `a` to the Integer object `2`. This can be done as the block can access variables initialized outside of its inner scope.
+
+On line 5, a local variable `b` is initialized and assigned to the Integer object `3`.
+
+On line 6, we break out of the loop using the keyword `break`.
+
+On lines 8 and 9 we invoke the `puts` method, passing in the local variables `a` and `b` as arguments.
+
+This code block would output `2` and raise a NameError, `undefined local variable or method b`. The local variable `b` was initialized in the inner scope of the `do...end` block, and the `puts` method cannot access variables local to the inner scrope of the `do...end` block.
+
+### Local Scope with Method Definitions
+
+```ruby
+a = 1
+
+def my_method
+  a = 5
+  puts a
+end
+
+puts a
+```
+
+On line 1, a local variable `a` is initialized and assigned to the Integer object `1`.
+
+On line 3 - 6, we define the method `my_method` with no parameters.
+
+On line 4, a new variable `a`, local to the method, is initialized and assigned to the Integer object `5`.
+
+On line 5, the `puts` method is invoked with the local variable `a` passed in as an argument.
+
+On line 8, the `puts` method is invoked with the local variable `a` passed in as an argument.
+
+This code block would output `1` and return `nil`. The `my_method` method does not have access to variables in the outer scope that are not passed into the method as arguments. Since this method has no parameters through which to pass arguments, it cannot access the variable local to the outer scope, and initializes a new variable `a` in its inner scope. This does not affect the local variable `a` initialized on line 1.
+
+## Method Definition and Invocation
 
 ### Method Definition
 
@@ -73,6 +131,8 @@ i += 5
 
 On line 1 we are initializing the local variable `i` and assigning it to the Integer object `0`. On line 2, we are reassigning tje local variable `i` to the return value of value of a method invocation of `Integer#+` on the local variable `i` with the Integer object `5` passed to it as an argument.
 
+## Common Collection Methods
+
 ### `Array#each` Method
 
 ```ruby
@@ -106,7 +166,7 @@ and the return value would be `[nil, nil, nil, nil]`.
 ```ruby
 [1, 2, 3, 4].select { |num| puts num }
 ```
-We are invoking the `Array#select` method on the Array object `[1, 2, 3, 4]` and passing the `{...}` block into the method with one parameter. The `select` method iterates through the Array object, passes each element of the Array to the block as an argument, and runs the block. If the block **evaluates** to `true`, the `select` method moves that element to a new array. After completing the iteration, the `select` method returns the new array with the elements that caused the block to evaluate to `true`. The `puts` method always returns `nil` which evalues to `false`, so the output of this method would be:
+We are invoking the `Array#select` method on the Array object `[1, 2, 3, 4]` and passing the `{...}` block into the method with one parameter. The `select` method iterates through the Array object, passes each element of the Array to the block as an argument, and runs the block. If the block **evaluates** to `true`, the `select` method moves that element to a new array. After completing the iteration, the `select` method returns the new array with the elements that caused the block to evaluate to `true`. The `puts` method always returns `nil` which evaluates to `false`, so the output of this method would be:
 ```
 1
 2
