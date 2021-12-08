@@ -1,0 +1,61 @@
+- local variable scope, especially how local variables interact with method invocations with blocks and method definitions
+- mutating vs non-mutating methods, pass-by-reference vs pass-by-value
+- working with collections (Array, Hash, String), and popular collection methods (each, map, select, etc). Review the two lessons on these topics thoroughly.
+- variables as pointers
+- puts vs return
+- false vs nil and the idea of "truthiness"
+- method definition and method invocation
+- implicit return value of method invocations and blocks
+- how the Array#sort method works
+
+
+
+`a = 5`
+
+Local variable `a` is initialized and assigned to the Integer object `5`
+
+```ruby
+a = 'string'
+b = a
+a = 5
+```
+
+On line 1, a local variable `a` is initialized and assigned to the String object with a value of 'string'.
+
+On line 2, a local variable `b` is initialized and assigned to the String object that local variable `a` is referencing. Both local variables `a` and `b` now reference the same object.
+
+On line 3, local variable `a` is reassigned to the Integer object `5`.
+
+Local variable `b` references the String object with a value of 'string' and local variable `a` references the Integer object `5`.
+
+```ruby
+def my_method(int)
+  puts int
+end
+```
+
+We are defining the method `my_method` which takes 1 non-optional parameter.
+
+`my_method(5)`
+
+We are invoking the `my_method` method and passing in the Integer object `5` as an argument to it.
+
+```ruby
+loop do
+  puts 'Hello'
+  break
+end
+```
+
+On line 1 we are invoking the `loop` method and passing in the `do...end` block as an argument.
+
+On line 2 we are invoking the `puts` method and passing in the String object 'Hello' as an argument.
+
+On line 3 we use the keyword `break` to break out of the `loop` method.
+
+```ruby
+i = 0
+i += 5
+```
+
+On line 1 we are initializing the local variable `i` and assigning it to the Integer object `0`. On line 2, we are reassigning to local variable `i` to the return value of value of a method invocation of `Integer#-` on the local variable `i` with the Integer object `5` passed to it as an argument.
