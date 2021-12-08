@@ -129,7 +129,7 @@ i = 0
 i += 5
 ```
 
-On line 1 we are initializing the local variable `i` and assigning it to the Integer object `0`. On line 2, we are reassigning tje local variable `i` to the return value of value of a method invocation of `Integer#+` on the local variable `i` with the Integer object `5` passed to it as an argument.
+On line 1 we are initializing the local variable `i` and assigning it to the Integer object `0`. On line 2, we are reassigning the local variable `i` to the return value of value of a method invocation of `Integer#+` on the local variable `i` with the Integer object `5` passed to it as an argument.
 
 ## Common Collection Methods
 
