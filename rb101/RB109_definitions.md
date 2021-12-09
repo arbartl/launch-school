@@ -95,6 +95,15 @@ This code block would output `1` and return `nil`. The `my_method` method does n
 
 Mutating Methods are said to "mutate their caller" and make permanent modifications to the value or state of the Object that they are called on. Many mutating methods are appended with the `!` character, but this is not always the case. The important distinction is in the return value of the method. If the method returns the object on which it was called, with any modifications intact, it is said to be a mutating method.
 
+#### Indexed Assignment
+
+```ruby
+str[1] = 'a'
+arr[2] = 5
+hash[:name] = "Name"
+```
+At first, the above code appears to be Assigning or Reassigning, which is non-mutating. In reality, this is a method call `#[]=` which mutates the Object on which it is called by reassigning the element to the Object passed in as an argument. The calling object will be mutated in place and be considered the same object.
+
 ### Non-Mutating Methods
 
 Non-mutating methods return a **NEW** instance of the object they are called on. This new instance can be assigned to a variable, but the original object on which the method was called remains unchanged.
@@ -102,6 +111,24 @@ Non-mutating methods return a **NEW** instance of the object they are called on.
 #### Re-Assignment
 
 Re-assignment "operators" such as `+=` and `-=` are considered non-mutating methods. In reality, `i += 5` is ruby's syntactical sugar for `i = i + 5`. `i` is re-assigned to the return value of calling the `Integer#+` method on `i` and passing in `5` as an argument. The return value is re-assigned to `i` causing `i` to reference a new object.
+
+### Concatentation
+
+An important thing to remember is regarding concatentation. As mentioned above, `+=` *performs* concatenation, but is a non-mutating method and returns a **new** Object. However, the methods `<<` and `#concat` are **mutating** methods and make changes directly to the Object on which they are callled.
+
+```ruby
+str = 'abc'
+str.object_id #200
+
+str += 'd' #'abcd'
+str.object_id #220
+
+str << 'e' #'abcde'
+str.object_id #220
+
+str.concat('f') #'abcdef'
+str.object_id #220
+```
 
 ## Method Definition and Invocation
 
