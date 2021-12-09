@@ -66,3 +66,20 @@ Lines 8 and 9 output the following:
 2
 ```
 and the return value is `nil`.
+
+### Example 4
+
+```ruby
+def example(str)
+  i = 3
+  loop do
+    puts str
+    i -= 1
+    break if i == 0
+  end
+end
+
+example('hello')
+```
+
+On lines 1-8 we define the method `example` with one parameter. On line 10 we invoke the `example` method passing in the String object `'hello'` as an argument. 
