@@ -89,6 +89,20 @@ On line 8, the `puts` method is invoked with the local variable `a` passed in as
 
 This code block would output `1` and return `nil`. The `my_method` method does not have access to variables in the outer scope that are not passed into the method as arguments. Since this method has no parameters through which to pass arguments, it cannot access the variable local to the outer scope, and initializes a new variable `a` in its inner scope. This does not affect the local variable `a` initialized on line 1.
 
+## Mutating vs Non-Mutating Methods / Pass-By-Reference vs Pass-By-Value
+
+### Mutating Methods
+
+Mutating Methods are said to "mutate their caller" and make permanent modifications to the value or state of the Object that they are called on. Many mutating methods are appended with the `!` character, but this is not always the case. The important distinction is in the return value of the method. If the method returns the object on which it was called, with any modifications intact, it is said to be a mutating method.
+
+### Non-Mutating Methods
+
+Non-mutating methods return a **NEW** instance of the object they are called on. This new instance can be assigned to a variable, but the original object on which the method was called remains unchanged.
+
+#### Re-Assignment
+
+Re-assignment "operators" such as `+=` and `-=` are considered non-mutating methods. In reality, `i += 5` is ruby's syntactical sugar for `i = i + 5`. `i` is re-assigned to the return value of calling the `Integer#+` method on `i` and passing in `5` as an argument. The return value is re-assigned to `i` causing `i` to reference a new object.
+
 ## Method Definition and Invocation
 
 ### Method Definition
