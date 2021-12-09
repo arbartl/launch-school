@@ -226,3 +226,10 @@ The `Array#reject` methods performs similarly to the `#select` method, but retur
 [1, 2, 3, 4].reduce { |memo, el| memo + el }
 ```
 We are invoking the `Enumerable#reduce` method on the Array object `[1, 2, 3, 4]` and passing the `{...}` block into the method with two parameters. The `reduce` method iterates through the Array object, and passes each element of the Array to the block as the `el` argument. The return value of the block is assigned to `memo` after each iteration. After all iterations, the `reduce` method returns the value of `memo`. There would be no output of this method, and the return value would be: `10`.
+
+
+## `puts` vs `p`
+
+`puts` and `p` both output the argument passed into the method to the standard output. The difference between these two is that `p` appends the `Object#inspect` method to the Object passed in as an argument before outputting the return of this method to the standard output.
+
+There is also an **important** difference in the return value of the two methods. `puts` always returns `nil`, whereas `p` returns the Object that was passed into it as an argument. This is important for methods that rely on the return value of a block, such as `Array#select`, as well as implicit returns of methods or blocks.
