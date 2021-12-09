@@ -215,3 +215,14 @@ We are invoking the `Array#select` method on the Array object `[1, 2, 3, 4]` and
 4
 ```
 and the return value would be `[]`.
+
+#### `Array#reject` Method
+
+The `Array#reject` methods performs similarly to the `#select` method, but returns an array of elements for which the block evaluates to `false`. In the above case, the output would be `[1, 2, 3, 4]` as each element evalues to `false` when the puts method is called passing it in as an argument.
+
+### `Enumerable#reduce` / `Enumberable#inject` Method
+
+```ruby
+[1, 2, 3, 4].reduce { |memo, el| memo + el }
+```
+We are invoking the `Enumerable#reduce` method on the Array object `[1, 2, 3, 4]` and passing the `{...}` block into the method with two parameters. The `reduce` method iterates through the Array object, and passes each element of the Array to the block as the `el` argument. The return value of the block is assigned to `memo` after each iteration. After all iterations, the `reduce` method returns the value of `memo`. There would be no output of this method, and the return value would be: `10`.
