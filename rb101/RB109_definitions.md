@@ -17,7 +17,7 @@
 
 `a = 5`
 
-Local variable `a` is initialized and assigned to the Integer object `5`
+Local variable `a` is initialized to the Integer object `5`
 
 ### Variable Reassignment
 
@@ -27,9 +27,9 @@ b = a
 a = 5
 ```
 
-On line 1, a local variable `a` is initialized and assigned to the String object with a value of 'string'.
+On line 1, a local variable `a` is initialized to the String object with a value of 'string'.
 
-On line 2, a local variable `b` is initialized and assigned to the String object that local variable `a` is referencing. Both local variables `a` and `b` now reference the same object.
+On line 2, a local variable `b` is initialized to the String object that local variable `a` is referencing. Both local variables `a` and `b` now reference the same object.
 
 On line 3, local variable `a` is reassigned to the Integer object `5`.
 
