@@ -445,3 +445,60 @@ A
 B
 C
 ```
+
+## Object Mutability
+
+### Example 1
+```ruby
+def fix(value)
+  value.upcase!
+  value.concat('!')
+  value
+end
+
+s = 'hello'
+t = fix(s)
+```
+
+This code demonstrates Ruby's concept of object mutability, that is that methods can either mutate the Object they are called on, or can return a new Object while leaving the calling Object as-is.
+
+On lines 1-5, the `fix` method is defined with one parameter. On line 7, the local variable `s` is initialized to the String object `'hello'`.
+
+On line 8, the local variable `t` is initialized to the return value of invoking the `fix` method and passing in the local variable `s` as an argument. Upon method invocation, the `value` method parameter and the local variable `s` reference the same String object.
+
+On line 2, the `String#upcase!` method is invoked on the `value` method parameter. This is a mutating method that mutates the Object it was called upon. On line 3, the `String#concat` method is invoked with the String object `'!'` passed in as an argument. The `concat` method is also a mutating method that mutates the Object it was called upon. Line 3 uses the implicit return concept of Ruby to return the mutated String object, which is assigned to the local variable `t`.
+
+After the code is run, local variables `s` and `t` would reference the same String object `'HELLO!'`.
+
+### Example 2
+```ruby
+def fix(value)
+  value = value.upcase
+  value.concat('!')
+end
+
+s = 'hello'
+t = fix(s)
+```
+This code demonstrates Ruby's concept of object mutability, that is that methods can either mutate the Object they are called on, or can return a new Object while leaving the calling Object as-is.
+
+On lines 1-4, the `fix` method is defined with one parameter. On line 6, the local variable `s` is initialized to the String object `'hello'`. On line 7, the local variable `t` is initialized to the return value of invoking the `fix` method and passing in the local variable `s` as an argument. Upon method invocation, the method parameter `value` and local variable `s` reference the same String object.
+
+On line 2, the method paramenter `value` is reassigned to the return value of calling the `String#upcase` method on the `value` parameter. The `String#upcase` method is a non-mutating method and returns a new String object. This reassignment has the side effect of causing the method parameter `value` and the local variable `s` to no longer reference the same string. On line 3, the mutating method `String#concat` is called on the method parameter `value` with the String object `'!'` passed in as an argument. The return value of the method will serve as the implicit return of the `fix` method and will be assigned to the local variable `t`.
+
+After the code is run, the local variable `s` will reference the String object `'hello'` and the local variable `t` will reference the String object `'HELLO!'`.
+
+### Example 3
+```ruby
+def fix(value)
+  value << 'xyz'
+  value = value.upcase
+  value.concat('!')
+end
+
+s = 'hello'
+t = fix(s)
+```
+
+This code demonstrates Ruby's concept of object mutability, specifically that methods can either mutate the Object they are called on, or can return a new Object while leaving the calling Object as-is.
+
