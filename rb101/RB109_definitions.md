@@ -227,6 +227,20 @@ The `Array#reject` methods performs similarly to the `#select` method, but retur
 ```
 We are invoking the `Enumerable#reduce` method on the Array object `[1, 2, 3, 4]` and passing the `{...}` block into the method with two parameters. The `reduce` method iterates through the Array object, and passes each element of the Array to the block as the `el` argument. The return value of the block is assigned to `memo` after each iteration. After all iterations, the `reduce` method returns the value of `memo`. There would be no output of this method, and the return value would be: `10`.
 
+### `Enumerable#each_with_object` Method
+
+```ruby
+[1, 2, 3, 4].each_with_object([]) { |el, arr| arr << el * 2 }
+```
+We are invoking the `Enumerable#each_with_object` method on the Array object `[1, 2, 3, 4]` with an empty Array literal passed into the method as an argument. We are also passing in the `{...}` block to the `each_with_object` method with two parameters, `el` referencing the element being passed into the block during each iteration, and `arr` referencing the empty Array literal passed into the method. The `each_with_object` method iterates through the Array it was called on and passes each element to the block passed into it as an argument. Within the block the `Array#<<` method is invoked on the Array referenced by `arr` with the return value of the `Integer#*` method being invoked on the `el` with `2` passed into the method as an argument. After `each_with_object` iterates through the Array it was called on, it returns the Array passed into it as an argument, referenced by the `arr` variable local to the `{...}` block.
+
+### `Enumerable#partition` Method
+```ruby
+odd, even = [1, 2, 3, 4].partition { |num| num.odd? }
+```
+The local variables `odd` and `even` are initialized to the return value of calling the `Enumerable#partition` method on the Array object `[1, 2, 3, 4]`. The `{...}` block is passed into the `partition` method as an argument with one parameter. The `partition` method iterates through the Array it was called on and passes each element as an argument to the block that was passed into it as an argument. After iteration, the `partition` method returns two arrays, the first an array of elements for which the block evaluated to `true`, the second an array of elements for which the block evaluated to `false`. These two arrays are assigned to the `odd` and `even` local variables, respectively.
+```
+
 
 ## `puts` vs `p`
 
