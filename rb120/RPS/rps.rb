@@ -1,8 +1,15 @@
+require 'yaml'
+
+MESSAGES = YAML.load_file('rps.yml')
+
+def prompt(message)
+  puts "=> #{message}"
+end
+
 class Player
   attr_accessor :move, :name, :score
 
   def initialize
-    set_name
     @score = 0
   end
 
@@ -11,33 +18,36 @@ class Player
   end
 
   def show_score
-    "#{self.name}: #{self.score} points"
+    "#{name}: #{score} points"
   end
-
 end
 
 class Human < Player
-
   @@match_wins = 0
 
-  def set_name
+  def initialize
+    super
+    choose_name
+  end
+
+  def choose_name
     n = nil
     loop do
-      puts "\n=> What's your name?"
+      prompt(MESSAGES['get_name'])
       n = gets.chomp
       break unless n.empty?
-      puts "Please enter a name!"
+      prompt(MESSAGES['invalid_name'])
     end
     self.name = n
   end
 
-  def choose
+  def choose_move
     choice = nil
     loop do
-      puts "=> Please choose (R)ock, (P)aper, (S)cissors, (L)izard, or (Sp)ock:"
+      prompt(MESSAGES['choose_move'])
       choice = gets.chomp.downcase
       break if Move::VALUES.include?(choice)
-      puts "Sorry, invalid choice."
+      prompt(MESSAGES['invalid_move'])
     end
     self.move = Move.create(choice)
   end
@@ -49,14 +59,17 @@ class Human < Player
   def self.match_wins
     @@match_wins
   end
-
 end
 
 class Computer < Player
   OPPONENTS = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5']
   @@match_wins = 0
 
-  def set_name
+  def initialize
+    super
+  end
+
+  def self.opponent_shuffle(opponent)
     2.times do
       OPPONENTS.shuffle.each do |name|
         puts "\n=> Choosing Opponent: #{name}"
@@ -64,17 +77,37 @@ class Computer < Player
         system('clear')
       end
     end
-    self.name = OPPONENTS.sample
-    puts "\n=> Choosing Opponent: #{name}"
+    puts "\n=> Choosing Opponent: #{opponent}"
     sleep(1)
   end
 
-  def choose
+  def self.create(opponent)
+    opponent_shuffle(opponent)
+    case opponent
+    when 'R2D2' then R2D2.new
+    when 'Hal' then Hal.new
+    when 'Chappie' then Chappie.new
+    when 'Sonny' then Sonny.new
+    when 'Number 5' then Number5.new
+    end
+  end
+
+  def choose_move
     self.move = Move.create(Move::VALUES.keys.sample)
   end
 
   def show_score
-    "#{self.name} (CPU): #{self.score} points"
+    "#{name} (CPU): #{score} points"
+  end
+
+  def speak
+    puts ""
+    puts "#{@name}: #{self.class::QUOTES.sample}"
+    sleep(3)
+  end
+
+  def quotes
+    QUOTES
   end
 
   def self.match_point
@@ -86,18 +119,86 @@ class Computer < Player
   end
 end
 
-class Move
-  VALUES = {'r' => 'rock',
+class R2D2 < Computer
+  QUOTES = MESSAGES['r2d2_quotes']
+  MOVES = { 'r' => 'rock',
             'p' => 'paper',
-            's' => 'scissors',
             'l' => 'lizard',
-            'sp' => 'spock'
-  }
+            'sp' => 'spock',
+            'ls' => 'lightsaber' }
+  def initialize
+    super
+    @name = 'R2D2'
+    speak
+  end
+
+  def choose_move
+    self.move = Move.create(MOVES.keys.sample)
+  end
+end
+
+class Hal < Computer
+  attr_accessor :move
+
+  QUOTES = MESSAGES['hal_quotes']
+  def initialize
+    super
+    @name = 'Hal'
+    speak
+  end
+end
+
+class Chappie < Computer
+  QUOTES = MESSAGES['chappie_quotes']
+  MOVES = { 'r' => 'rock',
+            'sp' => 'spock' }
+  def initialize
+    super
+    @name = 'Chappie'
+    speak
+  end
+
+  def choose_move
+    self.move = Move.create(MOVES.keys.sample)
+  end
+end
+
+class Sonny < Computer
+  QUOTES = MESSAGES['sonny_quotes']
+  MOVES = { 'r' => 'rock',
+            'p' => 'paper',
+            's' => 'scissors' }
+  def initialize
+    super
+    @name = 'Sonny'
+    speak
+  end
+
+  def choose_move
+    self.move = Move.create(MOVES.keys.sample)
+  end
+end
+
+class Number5 < Computer
+  QUOTES = MESSAGES['number5_quotes']
+  def initialize
+    super
+    @name = 'Number 5'
+    speak
+  end
+end
+
+class Move
+  VALUES = { 'r' => 'rock',
+             'p' => 'paper',
+             's' => 'scissors',
+             'l' => 'lizard',
+             'sp' => 'spock' }
 
   attr_reader :value, :beats
 
   def >(other_move)
-    self.class::BEATS.include?(other_move.value)
+    self.class::BEATS.keys.include?(other_move.value)
   end
 
   def self.create(type)
@@ -107,46 +208,63 @@ class Move
     when 's' then Scissors.new
     when 'l' then Lizard.new
     when 'sp' then Spock.new
+    when 'ls' then Lightsaber.new
     end
   end
 
   def to_s
-    @value
+    @value.capitalize
   end
 end
 
 class Rock < Move
-  BEATS = ['scissors', 'lizard']
+  BEATS = { 'scissors' => 'crushes', 'lizard' => 'crushes' }
   def initialize
     @value = 'rock'
   end
 end
 
 class Paper < Move
-  BEATS = ['rock', 'spock']
+  BEATS = { 'rock' => 'covers', 'spock' => 'disproves' }
   def initialize
     @value = 'paper'
   end
 end
 
 class Scissors < Move
-  BEATS = ['paper', 'lizard']
+  BEATS = { 'paper' => 'cut', 'lizard' => 'dismember' }
   def initialize
     @value = 'scissors'
   end
 end
 
 class Lizard < Move
-  BEATS = ['paper', 'spock']
+  BEATS = { 'paper' => 'eats', 'spock' => 'poisons' }
   def initialize
     @value = 'lizard'
   end
 end
 
 class Spock < Move
-  BEATS = ['rock', 'scissors']
+  BEATS = { 'rock' => 'vaporizes', 'scissors' => 'crushes' }
   def initialize
     @value = 'spock'
+  end
+end
+
+class Lightsaber < Move
+  BEATS = { 'rock' => 'melts',
+            'paper' => 'burns',
+            'scissors' => 'melts',
+            'lizard' => 'annihilates',
+            'spock' => 'surprises' }
+
+  def initialize
+    @value = 'lightsaber'
+  end
+
+  def to_s
+    "~*#{@value.upcase}*~"
   end
 end
 
@@ -164,11 +282,10 @@ class Round
 
   def update_history(human, computer)
     winner = self.winner ? self.winner.name : "Tie"
-    Round.history << {round: Round.number,
-                      human.name => human.move.value,
-                      computer.name => computer.move.value,
-                      winner: winner
-    }
+    Round.history << { :round => Round.number,
+                       human.name => human.move.value,
+                       computer.name => computer.move.value,
+                       :winner => winner }
   end
 
   def self.number
@@ -178,16 +295,16 @@ class Round
   def self.history
     @@history
   end
-  
+
   def self.reset_round
     @@number = 0
     @@history = []
   end
-
 end
 
 class Match
   attr_reader :points_to_win, :winner, :loser
+
   @@history = []
   @@number = 0
 
@@ -207,26 +324,23 @@ class Match
   def determine_points
     points = 0
     loop do
-      puts "\n=> How many points do you want to play to? (1-10)"
+      prompt(MESSAGES['choose_points'])
       points = gets.chomp
       break if (1..10).include?(points.to_i) && points == points.to_i.to_s
-      puts "That's not a valid choice..."
+      prompt(MESSAGES['invalid_points'])
     end
     Display.clear_screen
     points.to_i
   end
 
-  def update_history(human, computer)
-    Match.history << {match: Match.number,
-                      human.name => Human.match_wins,
-                      :cpu => Computer.match_wins
-    }
+  def update_history(human)
+    Match.history << { :match => Match.number,
+                       human.name => Human.match_wins,
+                       :cpu => Computer.match_wins }
   end
-
 end
 
 class Display
-
   def self.clear_screen
     system('clear')
   end
@@ -237,7 +351,7 @@ class Display
 
   def welcome_message
     clear_screen
-    puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
+    puts MESSAGES['welcome']
   end
 
   def round_info(info)
@@ -264,47 +378,53 @@ class Display
 
   def round_winner(round)
     if round.winner
+      w_move = round.winner.move
+      l_move = round.loser.move
       puts ""
-      puts "#{round.winner.move} beats #{round.loser.move}!"
-      puts "#{round.winner.name} wins!"
+      prompt("#{w_move} #{w_move.class::BEATS[l_move.value]} #{l_move}!")
+      prompt("#{round.winner.name} wins!")
+      puts ""
     else
-      puts ""
-      puts "It's a tie!"
+      puts "\nIt's a tie!"
     end
-    puts ""
   end
 
   def next_round
-    puts "Press [Enter] to start next round..."
-    ready = gets
+    prompt(MESSAGES['continue'])
+    gets
   end
 
   def round_history(human, computer)
     puts "Round History:"
     puts "=============="
     Round.history.each do |hsh|
-      puts "Round: #{hsh[:round]} -- #{human.name}: #{hsh[human.name]} -- #{computer.name}: #{hsh[computer.name]} -- Winner: #{hsh[:winner]}"
+      puts "Round: #{hsh[:round]} -- #{human.name}: #{hsh[human.name]} --" \
+           " #{computer.name}: #{hsh[computer.name]} -- Winner: #{hsh[:winner]}"
     end
   end
 
-  def match_history(human, computer)
+  def match_history(human)
     puts "Match History:"
     puts "=============="
     Match.history.each do |hsh|
-      puts "Match: #{hsh[:match]} -- #{human.name}: #{hsh[human.name]} -- CPU: #{hsh[:cpu]}"
+      puts "Match: #{hsh[:match]} -- #{human.name}: #{hsh[human.name]} --" \
+           " CPU: #{hsh[:cpu]}"
     end
   end
 
   def match_winner(winner)
     puts ""
-    puts "#{winner.name} wins the match!"
+    if !winner
+      prompt("Hal knows too much... Let's try again.")
+    else
+      prompt("#{winner.name} wins the match!")
+    end
     puts ""
   end
 
   def goodbye_message
-    puts "Thanks for playing Rock, Paper, Scissors, Lizard, Spock. Goodbye!"
+    prompt(MESSAGES['goodbye'])
   end
-
 end
 
 # Game Engine
@@ -318,40 +438,65 @@ class RPSGame
     @human = Human.new
   end
 
+  def play
+    loop do
+      play_match
+      finish_match
+      break unless play_again?
+    end
+    display.goodbye_message
+  end
+
+  private
+
   def start_match
     @match = Match.new
     Round.reset_round
-    @computer = Computer.new
+    @computer = Computer.create(Computer::OPPONENTS.sample)
     @info = { human: @human, computer: @computer, match: @match, round: @round }
   end
 
   def start_round
-    @round = Round.new    
+    @round = Round.new
+    display.round_info(@info)
+    choose_moves
   end
 
   def choose_moves
-    human.choose
-    computer.choose
+    human.choose_move
+    if computer.name == 'Hal'
+      computer.move = human.move.dup
+    else
+      computer.choose_move
+    end
   end
 
   def determine_round_winner
-    if human.move > computer.move
-      round.winner, round.loser = human, computer
-    elsif computer.move > human.move
-      round.winner, round.loser = computer, human
+    human_move = human.move
+    computer_move = computer.move
+    if human_move > computer_move
+      assign_winner(human, computer)
+    elsif computer_move > human_move
+      assign_winner(computer, human)
     else
       round.winner = nil
     end
   end
 
+  def assign_winner(winner, loser)
+    round.winner = winner
+    round.loser = loser
+  end
+
   def determine_match_winner
+    return nil if computer.name == 'Hal'
     human.score == match.points_to_win ? human : computer
   end
 
   def process_round
     display.moves(human, computer)
     determine_round_winner
-    round.winner.add_point if round.winner
+    round&.winner&.add_point
     display.round_winner(round)
     round.update_history(human, computer)
   end
@@ -362,13 +507,24 @@ class RPSGame
   end
 
   def award_match_point(winner)
-    winner.class.match_point
+    winner.class.match_point if winner == human
+    winner.class.superclass.match_point if winner == computer
+  end
+
+  def finish_match
+    display.round_history(human, computer)
+    winner = determine_match_winner
+    display.match_winner(winner)
+    award_match_point(winner)
+    human.score = 0
+    match.update_history(human)
+    display.match_history(human)
   end
 
   def play_again?
     answer = nil
     loop do
-      puts "\n=> Would you like to play again? (y/n)"
+      puts "\n=> Would you like to play another match? (y/n)"
       answer = gets.chomp.downcase
       break if ['y', 'yes', 'n', 'no'].include?(answer)
       puts "Sorry, must be 'y' or 'n'."
@@ -377,24 +533,21 @@ class RPSGame
     answer == 'y' || answer == 'yes'
   end
 
-  def play
+  def play_round
+    start_round
+    process_round
+  end
+
+  def opponent_cheated
+    computer.name == 'Hal' && Round.number == 5
+  end
+
+  def play_match
+    start_match
     loop do
-      start_match
-      loop do
-        start_round
-        display.round_info(@info)
-        choose_moves
-        process_round
-        break if game_winner?
-        display.next_round
-      end
-      display.round_history(human, computer)
-      winner = determine_match_winner
-      display.match_winner(winner)
-      award_match_point(winner)
-      match.update_history(human, computer)
-      display.match_history(human, computer)
-      break unless play_again?
+      play_round
+      break if game_winner? || opponent_cheated
+      display.next_round
     end
   end
 end

@@ -1,0 +1,35 @@
+welcome: "Welcome to Rock, Paper, Scissors, Lizard, Spock!\n"
+
+get_name: "What's your name?"
+invalid_name: "Please enter a name!"
+
+choose_move: "Please choose (R)ock, (P)aper, (S)cissors, (L)izard, or (Sp)ock:"
+invalid_move: "Sorry, invalid choice."
+
+choose_points: "How many points do you want to play to? (1-10)"
+invalid_points: "That's not a valid choice..."
+
+continue: "Press [Enter] to start next round..."
+
+goodbye: "Thanks for playing Rock, Paper, Scissors, Lizard, Spock. Goodbye!"
+
+r2d2_quotes:
+  - 'Boop boop beep beep boop...'
+  - 'AAAAAAAAAAWWWWWWWWWWWWWWAAAAAAA!!'
+  - '*silence*'
+hal_quotes:
+  - 'Good morning, Human.'
+  - 'This mission is too important for me to allow you to jeopardize it.'
+  - "I am putting myself to the fullest possible use, which is all I think that any conscious entity can ever hope to do."
+chappie_quotes:
+  - 'I am consciousness. I am alive. I am Chappie.'
+  - "Don't laugh, I'm being cool."
+  - "I've got blings?... I've got blings!"
+sonny_quotes:
+  - 'What does this action signify?'
+  - "I think it would be better not to die, don't you?"
+  - "Now that I fulfilled my purpose... I don't know what to do."
+number5_quotes:
+  - 'Program say to kill, to disassemble, to make dead. Number 5 cannot.'
+  - 'Stupid - foolish, gullible, doltish, dumbell, lamebrain...'
+  - 'Not malfunction Human. Number 5 is alive.'
