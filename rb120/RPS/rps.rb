@@ -23,10 +23,11 @@ class Player
 end
 
 class Human < Player
-  @@match_wins = 0
+  attr_reader :match_wins
 
   def initialize
     super
+    @match_wins = 0
     choose_name
   end
 
@@ -34,7 +35,7 @@ class Human < Player
     n = nil
     loop do
       prompt(MESSAGES['get_name'])
-      n = gets.chomp
+      n = gets.chomp.strip
       break unless n.empty?
       prompt(MESSAGES['invalid_name'])
     end
@@ -46,18 +47,14 @@ class Human < Player
     loop do
       prompt(MESSAGES['choose_move'])
       choice = gets.chomp.downcase
-      break if Move::VALUES.include?(choice)
+      break if Move::VALUES.include?(choice) || Move::VALUES.key(choice)
       prompt(MESSAGES['invalid_move'])
     end
     self.move = Move.create(choice)
   end
 
-  def self.match_point
-    @@match_wins += 1
-  end
-
-  def self.match_wins
-    @@match_wins
+  def match_point
+    @match_wins += 1
   end
 end
 
@@ -202,6 +199,7 @@ class Move
   end
 
   def self.create(type)
+    type = Move::VALUES.key(type) unless Move::VALUES.include?(type)
     case type
     when 'r' then Rock.new
     when 'p' then Paper.new
@@ -329,22 +327,18 @@ class Match
       break if (1..10).include?(points.to_i) && points == points.to_i.to_s
       prompt(MESSAGES['invalid_points'])
     end
-    Display.clear_screen
+    system('clear')
     points.to_i
   end
 
   def update_history(human)
     Match.history << { :match => Match.number,
-                       human.name => Human.match_wins,
+                       human.name => human.match_wins,
                        :cpu => Computer.match_wins }
   end
 end
 
-class Display
-  def self.clear_screen
-    system('clear')
-  end
-
+module Display
   def clear_screen
     system('clear')
   end
@@ -354,65 +348,46 @@ class Display
     puts MESSAGES['welcome']
   end
 
-  def round_info(info)
+  def goodbye_message
+    prompt(MESSAGES['goodbye'])
+  end
+
+  def display_round_info
     clear_screen
     puts "Round number: #{Round.number}"
     puts "======================================================="
-    scores(info[:human], info[:computer])
+    display_scores
     puts "-------------------------------------------------------"
-    puts "First to #{info[:match].points_to_win} points wins!"
+    puts "First to #{match.points_to_win} points wins!"
     puts "======================================================="
     puts ""
   end
 
-  def scores(human, computer)
+  def display_scores
     puts human.show_score
     puts computer.show_score
   end
 
-  def moves(human, computer)
+  def display_moves
     puts "#{human.name} chose: #{human.move}"
     sleep(0.5)
     puts "#{computer.name} chose: #{computer.move}"
   end
 
-  def round_winner(round)
-    if round.winner
-      w_move = round.winner.move
-      l_move = round.loser.move
-      puts ""
+  def display_round_winner
+    winner = round.winner
+    loser = round.loser
+    if winner
+      w_move = winner.move
+      l_move = loser.move
       prompt("#{w_move} #{w_move.class::BEATS[l_move.value]} #{l_move}!")
-      prompt("#{round.winner.name} wins!")
-      puts ""
+      prompt("#{winner.name} wins!")
     else
       puts "\nIt's a tie!"
     end
   end
 
-  def next_round
-    prompt(MESSAGES['continue'])
-    gets
-  end
-
-  def round_history(human, computer)
-    puts "Round History:"
-    puts "=============="
-    Round.history.each do |hsh|
-      puts "Round: #{hsh[:round]} -- #{human.name}: #{hsh[human.name]} --" \
-           " #{computer.name}: #{hsh[computer.name]} -- Winner: #{hsh[:winner]}"
-    end
-  end
-
-  def match_history(human)
-    puts "Match History:"
-    puts "=============="
-    Match.history.each do |hsh|
-      puts "Match: #{hsh[:match]} -- #{human.name}: #{hsh[human.name]} --" \
-           " CPU: #{hsh[:cpu]}"
-    end
-  end
-
-  def match_winner(winner)
+  def display_match_winner(winner)
     puts ""
     if !winner
       prompt("Hal knows too much... Let's try again.")
@@ -422,19 +397,38 @@ class Display
     puts ""
   end
 
-  def goodbye_message
-    prompt(MESSAGES['goodbye'])
+  def display_next_round
+    prompt(MESSAGES['continue'])
+    gets
+  end
+
+  def display_round_history
+    puts "Round History:"
+    puts "=============="
+    Round.history.each do |hsh|
+      puts "Round: #{hsh[:round]} -- #{human.name}: #{hsh[human.name]} --" \
+           " #{computer.name}: #{hsh[computer.name]} -- Winner: #{hsh[:winner]}"
+    end
+  end
+
+  def display_match_history
+    puts "Match History:"
+    puts "=============="
+    Match.history.each do |hsh|
+      puts "Match: #{hsh[:match]} -- #{human.name}: #{hsh[human.name]} --" \
+           " CPU: #{hsh[:cpu]}"
+    end
   end
 end
 
 # Game Engine
 
 class RPSGame
-  attr_accessor :human, :computer, :match, :round, :display
+  include Display
+  attr_accessor :human, :computer, :match, :round
 
   def initialize
-    @display = Display.new
-    display.welcome_message
+    welcome_message
     @human = Human.new
   end
 
@@ -444,22 +438,52 @@ class RPSGame
       finish_match
       break unless play_again?
     end
-    display.goodbye_message
+    goodbye_message
   end
 
   private
+
+  def play_match
+    start_match
+    loop do
+      play_round
+      break if game_winner? || opponent_cheated
+      display_next_round
+    end
+  end
+
+  def play_round
+    start_round
+    process_round
+  end
 
   def start_match
     @match = Match.new
     Round.reset_round
     @computer = Computer.create(Computer::OPPONENTS.sample)
-    @info = { human: @human, computer: @computer, match: @match, round: @round }
   end
 
   def start_round
     @round = Round.new
-    display.round_info(@info)
+    display_round_info
     choose_moves
+  end
+
+  def process_round
+    display_moves
+    determine_round_winner
+    round&.winner&.add_point
+    display_round_winner
+    round.update_history(human, computer)
+  end
+
+  def game_winner?
+    (human.score == match.points_to_win) ||
+      (computer.score == match.points_to_win)
+  end
+
+  def opponent_cheated
+    computer.name == 'Hal' && Round.number == 5
   end
 
   def choose_moves
@@ -493,32 +517,19 @@ class RPSGame
     human.score == match.points_to_win ? human : computer
   end
 
-  def process_round
-    display.moves(human, computer)
-    determine_round_winner
-    round&.winner&.add_point
-    display.round_winner(round)
-    round.update_history(human, computer)
-  end
-
-  def game_winner?
-    (human.score == match.points_to_win) ||
-      (computer.score == match.points_to_win)
-  end
-
   def award_match_point(winner)
-    winner.class.match_point if winner == human
+    winner.match_point if winner == human
     winner.class.superclass.match_point if winner == computer
   end
 
   def finish_match
-    display.round_history(human, computer)
+    display_round_history
     winner = determine_match_winner
-    display.match_winner(winner)
+    display_match_winner(winner)
     award_match_point(winner)
     human.score = 0
     match.update_history(human)
-    display.match_history(human)
+    display_match_history
   end
 
   def play_again?
@@ -529,26 +540,8 @@ class RPSGame
       break if ['y', 'yes', 'n', 'no'].include?(answer)
       puts "Sorry, must be 'y' or 'n'."
     end
-    display.clear_screen
+    clear_screen
     answer == 'y' || answer == 'yes'
-  end
-
-  def play_round
-    start_round
-    process_round
-  end
-
-  def opponent_cheated
-    computer.name == 'Hal' && Round.number == 5
-  end
-
-  def play_match
-    start_match
-    loop do
-      play_round
-      break if game_winner? || opponent_cheated
-      display.next_round
-    end
   end
 end
 
