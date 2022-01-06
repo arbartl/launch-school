@@ -1,5 +1,4 @@
 module Display
-
   def clear
     system('clear')
   end
@@ -21,6 +20,10 @@ module Display
 
   def clear_screen_and_display_board
     clear
+    puts "#{human.name} (#{human.marker}): #{human.score} points"
+    puts "#{computer.name} (#{computer.marker}): #{computer.score} points"
+    puts "-----------------------"
+    puts "First to #{TTTGame::POINTS_TO_WIN} wins!"
     puts ""
     board.draw
     puts ""
@@ -33,9 +36,9 @@ module Display
     when computer.marker then puts "Computer wins!"
     else puts "It's a tie!"
     end
+    sleep(2)
   end
 end
-
 
 class Board
   WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
@@ -53,6 +56,8 @@ class Board
     @squares = (1..9).to_a.to_h { |sq| [sq, Square.new] }
   end
 
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
   def draw
     puts "     |     |"
     puts "  #{squares[1]}  |  #{squares[2]}  |  #{squares[3]}"
@@ -66,6 +71,8 @@ class Board
     puts "  #{squares[7]}  |  #{squares[8]}  |  #{squares[9]}"
     puts "     |     |"
   end
+  # rubocop:enable Metrics/AbcSize
+  # rubocop:enable Metrics/MethodLength
 
   def []=(square, marker)
     squares[square].marker = marker
@@ -88,6 +95,24 @@ class Board
       squares = @squares.values_at(*line)
       if three_identical_markers?(squares)
         return squares.first.marker
+      end
+    end
+    nil
+  end
+
+  def block_or_win?
+    !!threatened_square
+  end
+
+  def threatened_square
+    WINNING_LINES.each do |line|
+      squares = @squares.values_at(*line)
+      if squares.any? { |square| square.unmarked? } &&
+         squares.select(&:marked?).map(&:marker).uniq.size == 1 &&
+         squares.select(&:marked?).map(&:marker).size == 2
+        squares.each do |square|
+          return square if square.marker == Square::INITIAL_MARKER
+        end
       end
     end
     nil
@@ -126,15 +151,27 @@ end
 
 class Player
   attr_reader :marker
+  attr_accessor :score, :name
 
   def initialize(marker)
     @marker = marker
+    @score = 0
   end
 end
 
 class Human < Player
+
+  def set_name
+    loop do
+      puts "What's your name?"
+      @name = gets.chomp.strip
+      break unless @name.empty?
+      puts "Please enter a name..."
+    end
+  end
+
   def move(board)
-    puts "Choose a square: #{board.empty_square_keys.join(', ')}"
+    puts "Choose a square: #{joinor(board.empty_square_keys)}"
     square = nil
     loop do
       square = gets.chomp.to_i
@@ -143,18 +180,40 @@ class Human < Player
     end
     board[square] = marker
   end
+
+  def joinor(arr, separator=', ', last_separator='or')
+    return arr[0].to_s if !arr[1]
+    last_element = arr.pop
+    arr.join(separator) + " #{last_separator} " + last_element.to_s
+  end
 end
 
 class Computer < Player
+  COMPUTERS = ['R2D2', 'Sonny', 'Chappie', 'Hal', 'Number 5']
+
+  def initialize(marker)
+    super
+    @name = COMPUTERS.sample
+  end
+  
   def move(board)
-    square = board.empty_square_keys.sample
-    board[square] = marker
+    puts "Computer is thinking..."
+    sleep(1)    
+    if board.block_or_win?
+      board.threatened_square.marker = marker
+    elsif board.empty_square_keys.include?(5)
+      board[5] = marker
+    else
+      square = board.empty_square_keys.sample
+      board[square] = marker
+    end
   end
 end
 
 class TTTGame
   HUMAN_MARKER = "X"
   COMPUTER_MARKER = "O"
+  POINTS_TO_WIN = 5
 
   attr_reader :board, :human, :computer
   attr_accessor :current_player
@@ -165,29 +224,43 @@ class TTTGame
     @board = Board.new
     @human = Human.new(HUMAN_MARKER)
     @computer = Computer.new(COMPUTER_MARKER)
-    @current_player = human
+    @current_player = nil
   end
 
   def play
     clear
-    display_welcome_message
-
-    loop do
-      clear_screen_and_display_board
-      loop do
-        current_player_moves
-        clear_screen_and_display_board
-        break if board.full? || board.someone_won?        
-      end
-      display_result
-      break unless play_again?
-      reset
-    end
-
+    display_welcome_message    
+    main_game
     display_goodbye_message
   end
 
   private
+
+  def choose_first_player
+    clear
+    4.times do
+      [human.name, computer.name].each do |name|
+        puts "Choosing who goes first: #{name}"
+        sleep(0.3)
+        clear
+      end
+    end
+    @current_player = first_player = [human, computer].sample
+    puts "Choosing who goes first: #{first_player.name}"
+    sleep(2)
+  end
+
+  def main_game
+    human.set_name
+    choose_first_player
+    loop do
+      clear_screen_and_display_board
+      take_turns
+      display_result
+      break if match_winner?
+      reset
+    end
+  end
 
   def current_player_moves
     @current_player.move(board)
@@ -195,11 +268,27 @@ class TTTGame
   end
 
   def switch_current_player
-    if current_player == human
-      self.current_player = computer
-    else
-      self.current_player = human
+    self.current_player = current_player == human ? computer : human
+  end
+
+  def take_turns
+    loop do
+      current_player_moves
+      clear_screen_and_display_board
+      award_point if board.someone_won?
+      break if board.full? || board.someone_won?
     end
+  end
+
+  def award_point
+    case board.winning_marker
+    when human.marker then human.score += 1
+    when computer.marker then computer.score += 1
+    end
+  end
+
+  def match_winner?
+    human.score == POINTS_TO_WIN || computer.score == POINTS_TO_WIN
   end
 
   def play_again?
