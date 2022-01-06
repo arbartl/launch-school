@@ -49,6 +49,10 @@ class Board
     reset
   end
 
+  def reset
+    @squares = (1..9).to_a.to_h { |sq| [sq, Square.new] }
+  end
+
   def draw
     puts "     |     |"
     puts "  #{squares[1]}  |  #{squares[2]}  |  #{squares[3]}"
@@ -81,19 +85,21 @@ class Board
 
   def winning_marker
     WINNING_LINES.each do |line|
-      if line.all? { |sq| squares[sq].marker == TTTGame::HUMAN_MARKER }
-        return TTTGame::HUMAN_MARKER
-      elsif line.all? { |sq| squares[sq].marker == TTTGame::COMPUTER_MARKER }
-        return TTTGame::COMPUTER_MARKER
+      squares = @squares.values_at(*line)
+      if three_identical_markers?(squares)
+        return squares.first.marker
       end
     end
     nil
   end
 
-  def reset
-    @squares = (1..9).to_a.to_h { |sq| [sq, Square.new] }
-  end
+  private
 
+  def three_identical_markers?(squares)
+    markers = squares.select(&:marked?).map(&:marker)
+    return false if markers.size != 3
+    markers.uniq.size == 1
+  end
 end
 
 class Square
@@ -109,6 +115,10 @@ class Square
     marker
   end
 
+  def marked?
+    marker != INITIAL_MARKER
+  end
+
   def unmarked?
     marker == INITIAL_MARKER
   end
@@ -120,22 +130,42 @@ class Player
   def initialize(marker)
     @marker = marker
   end
+end
 
-  def mark
+class Human < Player
+  def move(board)
+    puts "Choose a square: #{board.empty_square_keys.join(', ')}"
+    square = nil
+    loop do
+      square = gets.chomp.to_i
+      break if board.empty_square_keys.include?(square)
+      puts "Sorry, that's not a valid choice."
+    end
+    board[square] = marker
+  end
+end
+
+class Computer < Player
+  def move(board)
+    square = board.empty_square_keys.sample
+    board[square] = marker
   end
 end
 
 class TTTGame
   HUMAN_MARKER = "X"
   COMPUTER_MARKER = "O"
+
   attr_reader :board, :human, :computer
+  attr_accessor :current_player
 
   include Display
 
   def initialize
     @board = Board.new
-    @human = Player.new(HUMAN_MARKER)
-    @computer = Player.new(COMPUTER_MARKER)
+    @human = Human.new(HUMAN_MARKER)
+    @computer = Computer.new(COMPUTER_MARKER)
+    @current_player = human
   end
 
   def play
@@ -145,15 +175,9 @@ class TTTGame
     loop do
       clear_screen_and_display_board
       loop do
-        
-        human_moves
+        current_player_moves
         clear_screen_and_display_board
-        break if board.full? || board.someone_won?
-
-        computer_moves
-        clear_screen_and_display_board
-        break if board.full? || board.someone_won?
-        
+        break if board.full? || board.someone_won?        
       end
       display_result
       break unless play_again?
@@ -163,20 +187,19 @@ class TTTGame
     display_goodbye_message
   end
 
-  def human_moves
-    puts "Choose a square: #{board.empty_square_keys.join(', ')}"
-    square = nil
-    loop do
-      square = gets.chomp.to_i
-      break if board.empty_square_keys.include?(square)
-      puts "Sorry, that's not a valid choice."
-    end
-    board[square] = human.marker
+  private
+
+  def current_player_moves
+    @current_player.move(board)
+    switch_current_player
   end
 
-  def computer_moves
-    square = board.empty_square_keys.sample
-    board[square] = computer.marker
+  def switch_current_player
+    if current_player == human
+      self.current_player = computer
+    else
+      self.current_player = human
+    end
   end
 
   def play_again?
@@ -196,7 +219,6 @@ class TTTGame
     puts "Let's play again!"
     puts ""
   end
-
 end
 
 game = TTTGame.new
