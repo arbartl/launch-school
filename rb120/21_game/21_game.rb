@@ -2,14 +2,20 @@ def prompt(message)
   puts "=> #{message}"
 end
 
-module DisplayMethods
+module ScreenDisplay
   EXPLANATION = <<-MSG
+   You will start the game with 500 chips to use (aren't we generous?).
+   You will be asked to place a bet before each round.
+
    You and the dealer will each be dealt 2 cards. You will only see one 
    of the dealer's cards. The goal is to reach 21 points without going
-   over (busting). After you decide to keep your hand (stay), the dealer
-   will go.
+   over (busting). You can continue drawing cards (hit) to improve your
+   score. You also have the option to double down after your cards are
+   dealt. This will double your bet and you will only get one more card.
+   
+   After you decide to keep your hand (stay), the dealer will go.
  
-   The dealer will reveal their other card, and decide to stay or hit.
+   The dealer will reveal their other card, and decide to hit or stay.
    The dealer MUST hit if they have less than 17 points. After the dealer
    stays, your scores will be compared.
    
@@ -21,25 +27,47 @@ module DisplayMethods
    get Blackjack, you get one and a half times your bet back!  
   MSG
 
+  WELCOME = <<-MSG
+            Welcome to Ruby BlackJack (OOP Version)!
+
+
+                        +------+
+                        |A     |
+                        |♠   +------+
+                        |    |K     |
+                        |    |♠     |
+                        |    |      |
+                        +----|     ♠|
+                             |     K|
+                             +------+
+
+  MSG
+
   def clear
     system('clear')
   end
 
   def welcome_message
     clear
-    puts "Welcome to Ruby BlackJack (OOP Version)!"
+    puts(WELCOME)
     puts ""
     display_explanation if ask_for_explanation
+  end
+
+  def joinor(arr, separator=', ', last_separator='or')
+    return arr[0].to_s if !arr[1]
+    arr[0...-1].join(separator) + " #{last_separator} " + arr[-1].to_s
   end
 
   def ask_for_explanation
     choice = nil
     loop do
-      prompt("Would you like an explanation? (Y / N)")
+      prompt("Would you like an explanation of the rules? (Y/N)")
       choice = gets.chomp.strip.downcase
       break if %w(y n yes no).include?(choice)
       prompt("Sorry, I didnt catch that...")
     end
+    clear
     choice == 'y' || choice == 'yes'
   end
 
@@ -49,35 +77,54 @@ module DisplayMethods
     puts("")
     prompt("Ready to start? Press [Enter] to play!")
     gets
+    clear
   end
 
   def show_result
-    if human.blackjack?
+    puts ""
+    if anyone_blackjack?
+      show_blackjack
+    elsif anyone_busted?
+      show_busted
+    else
+      show_high_hand
+    end
+    sleep(1)
+  end
+
+  def show_blackjack
+    if player.blackjack?
       prompt("You got blackjack! You win!")
     elsif dealer.blackjack?
       prompt("Dealer got blackjack! Dealer wins!")
-    elsif human.busted?
+    end
+  end
+
+  def show_busted
+    if player.busted?
       prompt("You busted! Dealer wins!")
     elsif dealer.busted?
       prompt("Dealer busted! You win!")
-    elsif human.hand.total > dealer.hand.total
+    end
+  end
+
+  def show_high_hand
+    if player.hand.total > dealer.hand.total
       prompt("You win!")
-    elsif dealer.hand.total > human.hand.total
+    elsif dealer.hand.total > player.hand.total
       prompt("Dealer wins!")
     else
       prompt("It's a tie!")
     end
-    puts ""
-    sleep(1)
   end
 
   def goodbye_message
-    prompt("You left the game with #{human.chips} chips!")
+    prompt("You left the game with #{player.chips} chips!")
     prompt("Thanks for playing BlackJack! Goodbye!")
   end
 end
 
-module Displayable
+module HandDisplay
   def display(last_card_hidden=false)
     if !last_card_hidden
       show_full_hand
@@ -89,27 +136,25 @@ module Displayable
   private
 
   def show_full_hand
-    puts "======================================"
+    puts "  ======================================"
     create_top_line
     create_val_line
     create_suit_line
-    puts "======================================"
-    puts "Hand Score: #{total}"
-    puts ""
+    puts "  ======================================"
+    puts "  Hand Score: #{total}"
   end
 
   def hide_last_card
-    puts "======================================"
+    puts "  ======================================"
     create_top_line
     create_val_line(true)
     create_suit_line(true)
-    puts "======================================"
-    puts "Hand Score: ??"
-    puts ""
+    puts "  ======================================"
+    puts "  Hand Score: ??"
   end
 
   def create_top_line
-    top_line = ""
+    top_line = "  "
     cards.size.times do
       top_line += "+----"
     end
@@ -118,7 +163,7 @@ module Displayable
   end
 
   def create_val_line(hidden=false)
-    val_line = ""
+    val_line = "  "
     if !hidden
       cards.each { |card| val_line += "|#{card.rank}".ljust(5) }
       val_line += '  |'
@@ -130,7 +175,7 @@ module Displayable
   end
 
   def create_suit_line(hidden=false)
-    suit_line = ""
+    suit_line = "  "
     if !hidden
       cards.each { |card| suit_line += "|#{card.symbol}".ljust(5) }
       suit_line += '  |'
@@ -143,7 +188,7 @@ module Displayable
 end
 
 class Hand
-  include Displayable
+  include HandDisplay
 
   attr_accessor :cards, :total
 
@@ -194,10 +239,10 @@ class Participant
 end
 
 class Player < Participant
-  attr_accessor :chips, :bet
+  attr_accessor :chips, :bet, :move
 
   def initialize
-    @name = choose_name
+    @name = nil
     @hand = Hand.new
     @hand_hidden = false
     @chips = 500
@@ -205,14 +250,26 @@ class Player < Participant
   end
 
   def choose_name
-    name = nil
     loop do
       prompt("Please enter your name:")
-      name = gets.chomp.strip
-      break unless name.empty?
+      @name = gets.chomp.strip
+      break unless @name.empty?
       prompt("Invalid entry...")
     end
-    name
+  end
+
+  def double_down(card)
+    @hand << card
+    @hand.update_total
+    @bet *= 2
+  end
+
+  def move_options
+    if hand.cards.size == 2 && (bet * 2 <= chips)
+      ['(h)it', '(s)tand', '(d)ouble down']
+    else
+      %w((h)it (s)tand)
+    end
   end
 end
 
@@ -300,22 +357,23 @@ class Game
   DEALER_STAY = 17
   TARGET_VALUE = 21
 
-  include DisplayMethods
+  include ScreenDisplay
 
-  attr_reader :human, :dealer, :players, :deck
+  attr_reader :player, :dealer, :players, :deck
 
   def initialize
-    welcome_message
-    @human = Player.new
+    @player = Player.new
     @dealer = Dealer.new
-    @players = [dealer, human]
+    @players = [dealer, player]
     @deck = Deck.new
   end
 
   def start
+    welcome_message
+    player.choose_name
     loop do
       play_round
-      break if human.chips == 0
+      break if player.chips == 0
       break unless play_again?
       reset_game
     end
@@ -326,7 +384,7 @@ class Game
 
   def reset_game
     @deck = Deck.new
-    human.reset
+    player.reset
     dealer.reset
   end
 
@@ -342,16 +400,16 @@ class Game
 
   def player_bet
     clear
-    human.bet = ask_for_bet
+    player.bet = ask_for_bet
   end
 
   def ask_for_bet
     bet = nil
     loop do
-      prompt("You have #{human.chips} chips. " \
-             "How many would you like to bet? (1 - #{human.chips})")
+      prompt("You have #{player.chips} chips. " \
+             "How many would you like to bet? (1 - #{player.chips})")
       bet = gets.chomp
-      break if (1..human.chips).include?(bet.to_i) && bet == bet.to_i.to_s
+      break if (1..player.chips).include?(bet.to_i) && bet == bet.to_i.to_s
       prompt("That's not a valid bet...")
     end
     bet.to_i
@@ -366,84 +424,108 @@ class Game
   def display_cards
     clear
     players.each do |player|
-      puts "#{player.name}'s Hand:"
-      if player.hand_hidden
-        player.hand.display(true)
-      else
-        player.hand.display
-      end
+      puts ""
+      puts "  #{player.name}'s Hand:"
+      player.hand_hidden ? player.hand.display(true) : player.hand.display
     end
+    puts ""
+    puts "  Your chips: #{player.chips} -- Your bet: #{player.bet}"
   end
 
   def player_turn
-    move = nil
     loop do
       display_cards
-      break if human.blackjack?
-      move = player_choice
-      deck.deal_card(human) if move == 'h'
-      break if human.busted? || move == 's'
+      break if player.blackjack?
+      process_player_move
+      break if player.busted? ||
+               player.hand.total == TARGET_VALUE ||
+               %w(s d dd).include?(player.move)
     end
     display_cards
   end
 
   def player_choice
-    move = nil
+    options = player.move_options
     loop do
-      prompt("Would you like to (h)it or (s)tand?")
-      move = gets.chomp.downcase
-      break if %w(h s).include?(move)
+      player_move_request(options)
+      break if (%w(h s).include?(player.move) && options.size == 2) ||
+               (%w(h s d dd).include?(player.move) && options.size == 3)
       prompt("Invalid choice...")
     end
-    move
+  end
+
+  def player_move_request(options)
+    puts ""
+    prompt("Would you like to #{joinor(options)}?")
+    player.move = gets.chomp.downcase
+  end
+
+  def process_player_move
+    player_choice
+    deck.deal_card(player) if player.move == 'h'
+    player.double_down(deck.draw) if %w(d dd).include?(player.move)
   end
 
   def dealer_turn
     dealer.hand_hidden = false
-    unless human.busted? || human.blackjack?
-      loop do
-        display_cards
-        prompt("Dealer's Turn...")
-        break if dealer.busted? || dealer.hand.total >= DEALER_STAY
-        deck.deal_card(dealer)
-        sleep(1)
-      end
+    unless player.busted? || player.blackjack?
+      process_dealer_turn
     end
     display_cards
   end
 
+  def process_dealer_turn
+    loop do
+      display_cards
+      puts ""
+      prompt("Dealer's Turn...")
+      break if dealer.busted? || dealer.hand.total >= DEALER_STAY
+      deck.deal_card(dealer)
+      sleep(1)
+    end
+  end
+
   def update_chip_count
-    if human.blackjack?
-      human.chips += (human.bet * 1.5).to_i unless dealer.blackjack?
-    elsif loser
+    if player.blackjack?
+      player.chips += (player.bet * 1.5).to_i unless dealer.blackjack?
+    elsif loser?
       lose_bet
-    elsif winner
+    elsif winner?
       win_bet
     end
   end
 
-  def winner
-    dealer.busted? ||
-      (human.hand.total > dealer.hand.total && !human.busted?)
+  def anyone_busted?
+    player.busted? || dealer.busted?
   end
 
-  def loser
-    human.busted? ||
+  def anyone_blackjack?
+    player.blackjack? || dealer.blackjack?
+  end
+
+  def winner?
+    dealer.busted? ||
+      (player.hand.total > dealer.hand.total && !player.busted?)
+  end
+
+  def loser?
+    player.busted? ||
       dealer.blackjack? ||
-      (dealer.hand.total > human.hand.total && !dealer.busted?)
+      (dealer.hand.total > player.hand.total && !dealer.busted?)
   end
 
   def win_bet
-    human.chips += human.bet
+    player.chips += player.bet
   end
 
   def lose_bet
-    human.chips -= human.bet
+    player.chips -= player.bet
   end
 
   def play_again?
     answer = nil
-    prompt("You have #{human.chips} chips left.")
+    puts ""
+    prompt("You have #{player.chips} chips left.")
     loop do
       prompt("Would you like to play again? (y/n)")
       answer = gets.chomp.downcase
