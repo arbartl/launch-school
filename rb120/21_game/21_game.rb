@@ -1,8 +1,16 @@
-def prompt(message)
-  puts "=> #{message}"
+module DisplayUtil
+  def clear
+    system('clear')
+  end
+
+  def prompt(message)
+    puts "=> #{message}"
+  end
 end
 
 module ScreenDisplay
+  include DisplayUtil
+
   EXPLANATION = <<-MSG
    You will start the game with 500 chips to use (aren't we generous?).
    You will be asked to place a bet before each round.
@@ -43,10 +51,6 @@ module ScreenDisplay
 
   MSG
 
-  def clear
-    system('clear')
-  end
-
   def welcome_message
     clear
     puts(WELCOME)
@@ -68,7 +72,7 @@ module ScreenDisplay
       prompt("Sorry, I didnt catch that...")
     end
     clear
-    choice == 'y' || choice == 'yes'
+    %w(y yes).include?(choice)
   end
 
   def display_explanation
@@ -239,7 +243,10 @@ class Participant
 end
 
 class Player < Participant
-  attr_accessor :chips, :bet, :move
+  include DisplayUtil
+
+  attr_accessor :bet, :chips
+  attr_reader :move
 
   def initialize
     @name = nil
@@ -269,6 +276,19 @@ class Player < Participant
       ['(h)it', '(s)tand', '(d)ouble down']
     else
       %w((h)it (s)tand)
+    end
+  end
+
+  def move=(option)
+    if %w(h s d dd).include?(option)
+      @move = option
+    else
+      case option
+      when 'hit' then @move = 'h'
+      when 'stand' then @move = 's'
+      when 'double' then @move = 'd'
+      when 'double-down' then @move = 'd'
+      end
     end
   end
 end
@@ -446,10 +466,12 @@ class Game
 
   def player_choice
     options = player.move_options
+    short_valid = %w(h s hit stand)
+    long_valid = %w(h s d dd hit stand double double-down)
     loop do
       player_move_request(options)
-      break if (%w(h s).include?(player.move) && options.size == 2) ||
-               (%w(h s d dd).include?(player.move) && options.size == 3)
+      break if (short_valid.include?(player.move) && options.size == 2) ||
+               (long_valid.include?(player.move) && options.size == 3)
       prompt("Invalid choice...")
     end
   end
@@ -529,10 +551,10 @@ class Game
     loop do
       prompt("Would you like to play again? (y/n)")
       answer = gets.chomp.downcase
-      break if %w(y n).include?(answer)
+      break if %w(y n yes no).include?(answer)
       prompt("Invalid choice...")
     end
-    answer == 'y'
+    %w(y yes).include?(answer)
   end
 end
 
